@@ -5,6 +5,7 @@
 //  Created by Poonam Mahi on 2022-03-16.
 //
 
+
 import UIKit
 import CoreData
 
@@ -26,7 +27,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     override func viewDidLoad() {
         super.viewDidLoad()
         
-
+        self.navigationItem.title = "TODO APP"
         tableView.dataSource = self
         tableView.delegate = self
         tableView.separatorStyle = .none
@@ -34,11 +35,6 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         navigationController?.navigationBar.topItem?.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: UIBarButtonItem.SystemItem.add, target: self, action: #selector(clickedAddBtn))
         
         getData()
-    }
-    
-    override func viewWillAppear(_ animated: Bool) {
-        // Bu fonksiyon her viewcontroller açıldıında çağrılır
-        NotificationCenter.default.addObserver(self, selector: #selector(getData), name: NSNotification.Name("newData"), object: nil)
     }
     
     @objc func getData(){
@@ -78,29 +74,60 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     }
     
     @objc func clickedAddBtn(){
-        selectedTask = ""
-        performSegue(withIdentifier: "toDetailsVC", sender: nil)
-    }
-    
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        if segue.identifier == "toDetailsVC"{
-            let destinationVC = segue.destination as! DetailsViewController
-            destinationVC.chosenTask = selectedTask
-            destinationVC.chosenTaskId = selectedTaskId
+
+        let alert = UIAlertController(title: "Add Task", message: "Enter a task", preferredStyle: .alert)
+
+        alert.addTextField { (textField) in
+            textField.placeholder = ""
         }
+
+        //ADD
+        alert.addAction(UIAlertAction(title: "Add", style: .default, handler: { [weak alert] (_) in
+            guard let textfield = alert?.textFields?.first else {
+                return
+            }
+            print("Text field: \(textfield.text ?? "")")
+            guard let text = textfield.text else{return}
+            
+            if text != "" {
+                
+                let appdelegate = UIApplication.shared.delegate as! AppDelegate
+                let context = appdelegate.persistentContainer.viewContext
+                
+                let newTask = NSEntityDescription.insertNewObject(forEntityName: "Tasks", into: context)
+                
+                newTask.setValue(UUID(), forKey: "id")
+                newTask.setValue(text, forKey: "title")
+                newTask.setValue(false, forKey: "isCompleted")
+                
+                do{
+                    try context.save()
+                    print("success")
+                }catch{
+                    print("error")
+                }
+                
+                
+                self.getData()
+            }
+            
+        }))
+        
+        //Cancel
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
+
+
+        self.present(alert, animated: true, completion: nil)
+        
     }
     
-   
-    
-    func numberOfSections(in tableView: UITableView) -> Int {
-        return 1
-    }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return tasks.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+       
         let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath) as! TaskTableViewCell
         
         
@@ -215,3 +242,4 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
 
 
 }
+
